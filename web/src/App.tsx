@@ -1,86 +1,149 @@
 import { useEffect, useState } from "react";
+import { fetchTodayNeos } from "./api/neos";
+import { Dossier } from "./components/Dossier";
+import { Roster } from "./components/Roster";
+import { TacticalPlot } from "./components/TacticalPlot";
+import type { NeoSummary } from "./types";
 
-type ApiState = {
-  status: "checking..." | "ok" | "error";
-  errorMessage: string;
-};
+type LoadState =
+  | { kind: "loading" }
+  | { kind: "error"; message: string }
+  | { kind: "success"; items: NeoSummary[] };
 
 export default function App() {
-  const [apiState, setApiState] = useState<ApiState>({
-    status: "checking...",
-    errorMessage: ""
-  });
+  const [state, setState] = useState<LoadState>({ kind: "loading" });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function checkHealth() {
+    async function loadNeos() {
+      setState({ kind: "loading" });
       try {
-        const response = await fetch("/api/health");
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+        const items = await fetchTodayNeos();
+        if (cancelled) {
+          return;
         }
-
-        const data = (await response.json()) as { status?: string };
-        if (!cancelled) {
-          setApiState({
-            status: data.status === "ok" ? "ok" : "error",
-            errorMessage: data.status === "ok" ? "" : "Unexpected API response"
-          });
-        }
+        setState({ kind: "success", items });
+        setSelectedId((current) => {
+          if (current && items.some((item) => item.id === current)) {
+            return current;
+          }
+          return items[0]?.id ?? null;
+        });
       } catch (error) {
-        if (!cancelled) {
-          const message =
-            error instanceof Error ? error.message : "Request failed";
-          setApiState({
-            status: "error",
-            errorMessage: message
-          });
+        if (cancelled) {
+          return;
         }
+        setState({
+          kind: "error",
+          message: error instanceof Error ? error.message : "Request failed"
+        });
       }
     }
 
-    void checkHealth();
+    void loadNeos();
 
     return () => {
       cancelled = true;
     };
   }, []);
 
+  const retry = async () => {
+    setState({ kind: "loading" });
+    try {
+      const items = await fetchTodayNeos();
+      setState({ kind: "success", items });
+      setSelectedId(items[0]?.id ?? null);
+    } catch (error) {
+      setState({
+        kind: "error",
+        message: error instanceof Error ? error.message : "Request failed"
+      });
+    }
+  };
+
+  if (state.kind === "loading") {
+    return (
+      <div className="appShell">
+        <header className="topBar">
+          <div className="titleBlock">
+            <h1>Asteroid Hunter Tactical Console</h1>
+            <p>Deep-space contact analysis relay</p>
+          </div>
+          <div className="topPill">Scanning…</div>
+        </header>
+        <main className="statePanel">
+          <section className="stateCard">
+            <h2>Scanning…</h2>
+            <p>Querying today&apos;s near-Earth objects from mission telemetry.</p>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  if (state.kind === "error") {
+    return (
+      <div className="appShell">
+        <header className="topBar">
+          <div className="titleBlock">
+            <h1>Asteroid Hunter Tactical Console</h1>
+            <p>Deep-space contact analysis relay</p>
+          </div>
+          <div className="topPill">Link Lost</div>
+        </header>
+        <main className="statePanel">
+          <section className="stateCard">
+            <h2>Transmission Error</h2>
+            <p>Unable to load today&apos;s NEO roster. {state.message}</p>
+            <button type="button" onClick={() => void retry()}>
+              Retry Scan
+            </button>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  const selected =
+    state.items.find((item) => item.id === selectedId) ?? state.items[0] ?? null;
+
   return (
-    <main
-      style={{
-        fontFamily: "system-ui, sans-serif",
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        margin: 0,
-        background: "#0b1220",
-        color: "#e8eefc",
-        padding: "2rem"
-      }}
-    >
-      <section
-        style={{
-          width: "min(640px, 100%)",
-          border: "1px solid #2d3a59",
-          borderRadius: "12px",
-          padding: "1.25rem 1.5rem",
-          background: "#111a2d"
-        }}
-      >
-        <h1 style={{ margin: "0 0 0.75rem", fontSize: "1.5rem" }}>
-          Asteroid Hunter Tactical Console
-        </h1>
-        <p style={{ margin: 0, fontSize: "1rem" }}>
-          API Status: {apiState.status}
-        </p>
-        {apiState.status === "error" && (
-          <p style={{ margin: "0.5rem 0 0", color: "#ffb4b4", fontSize: "0.9rem" }}>
-            {apiState.errorMessage}
-          </p>
-        )}
-      </section>
-    </main>
+    <div className="appShell">
+      <header className="topBar">
+        <div className="titleBlock">
+          <h1>Asteroid Hunter Tactical Console</h1>
+          <p>Live NEO roster for today&apos;s close approaches</p>
+        </div>
+        <div className="topPill">{state.items.length} Contacts</div>
+      </header>
+
+      {state.items.length === 0 ? (
+        <main className="statePanel">
+          <section className="stateCard">
+            <h2>No Contacts</h2>
+            <p>No near-Earth objects reported for today.</p>
+            <button type="button" onClick={() => void retry()}>
+              Refresh
+            </button>
+          </section>
+        </main>
+      ) : (
+        <main className="contentGrid">
+          <Roster
+            items={state.items}
+            selectedId={selected?.id ?? null}
+            onSelect={setSelectedId}
+          />
+          <Dossier item={selected} />
+          <TacticalPlot
+            items={state.items}
+            selectedId={selected?.id ?? null}
+            onSelect={setSelectedId}
+          />
+        </main>
+      )}
+    </div>
   );
 }
