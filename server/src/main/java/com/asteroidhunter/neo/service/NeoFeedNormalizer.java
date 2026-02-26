@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import org.springframework.stereotype.Service;
 
+@Service
 public class NeoFeedNormalizer {
 
     private static final double LUNAR_DISTANCE_KM = 384400.0;

@@ -1,2 +1,8 @@
 server:
   port: ${PORT:8080}
+
+app:
+  timezone: ${APP_TIMEZONE:America/Toronto}
+  cache:
+    neosTodayTtl: ${APP_CACHE_NEOS_TODAY_TTL:PT1H}
+    neosTodayMaxSize: ${APP_CACHE_NEOS_TODAY_MAX_SIZE:10}
