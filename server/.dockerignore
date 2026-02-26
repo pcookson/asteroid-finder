@@ -1,0 +1,20 @@
+# Build outputs
+target/
+
+# VCS
+.git/
+.gitignore
+
+# IDE/editor
+.idea/
+.vscode/
+
+# Env files (keep examples if present)
+.env
+.env.*
+!.env.example
+
+# Logs / temp
+*.log
+*.tmp
+.DS_Store

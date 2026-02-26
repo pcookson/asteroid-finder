@@ -25,6 +25,7 @@ Notes:
 - Copy env templates before running (not required by code yet, but ready for future deploy config):
   - `cp server/.env.example server/.env`
   - `cp web/.env.example web/.env`
+  - These files are examples only; no secrets are committed in this repo.
 
 ## Run The Backend (`server`)
 
@@ -66,6 +67,14 @@ Open:
 - `http://localhost:5173`
 
 The Vite dev server proxies `/api/*` requests to `http://localhost:8080`.
+
+## Deploy Later
+
+No deployment steps are configured yet.
+
+- `web` can be deployed to Vercel later.
+- `server` can be deployed to Render later.
+- `server` supports the `PORT` environment variable and includes a `Dockerfile` for container-based deployment.
 
 ## Full Local Dev Workflow
 
