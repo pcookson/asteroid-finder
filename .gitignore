@@ -1,0 +1,19 @@
+# Environment files (keep examples committed)
+.env*
+!.env.example
+!**/.env.example
+
+# Logs
+*.log
+
+# Node / frontend builds
+node_modules/
+dist/
+
+# Java / Maven builds
+server/target/
+
+# IDEs / editors
+.idea/
+.vscode/
+
